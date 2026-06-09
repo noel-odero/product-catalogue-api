@@ -25,4 +25,10 @@
     <ProjectReference Include="..\ProductCatalogue\ProductCatalogue.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+  <Content Include="xunit.runner.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </Content>
+</ItemGroup>
+
 </Project>
