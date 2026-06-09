@@ -1,3 +1,5 @@
+using ProductCatalogue.Models;
+
 namespace ProductCatalogue.DTOs.Products;
 
 public class ProductResponse
@@ -10,7 +12,7 @@ public class ProductResponse
     public string Category { get; set; } = string.Empty;
     public string TargetMarket { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public ProductStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

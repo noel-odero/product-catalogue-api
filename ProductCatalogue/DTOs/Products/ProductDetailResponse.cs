@@ -1,5 +1,6 @@
 using ProductCatalogue.DTOs.Assets;
 using ProductCatalogue.DTOs.Variants;
+using ProductCatalogue.Models;
 
 namespace ProductCatalogue.DTOs.Products;
 
@@ -13,7 +14,7 @@ public class ProductDetailResponse
     public string Category { get; set; } = string.Empty;
     public string TargetMarket { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public ProductStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<VariantResponse> Variants { get; set; } = new();

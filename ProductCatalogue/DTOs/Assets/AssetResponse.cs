@@ -1,3 +1,5 @@
+using ProductCatalogue.Models;
+
 namespace ProductCatalogue.DTOs.Assets;
 
 public class AssetResponse
@@ -5,8 +7,8 @@ public class AssetResponse
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     public Guid? VariantId { get; set; }
-    public string AssetType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public AssetType AssetType { get; set; }
+    public AssetStatus Status { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
@@ -19,8 +21,8 @@ public class AssetResponse
 
 public class AssetStatusHistoryResponse
 {
-    public string PreviousStatus { get; set; } = string.Empty;
-    public string NewStatus { get; set; } = string.Empty;
+    public AssetStatus PreviousStatus { get; set; }
+    public AssetStatus NewStatus { get; set; }
     public string? Comment { get; set; }
     public DateTime ChangedAt { get; set; }
 }

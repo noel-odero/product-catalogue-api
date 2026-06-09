@@ -1,3 +1,5 @@
+using ProductCatalogue.Models;
+
 namespace ProductCatalogue.DTOs.Dashboard;
 
 public class DashboardSummaryResponse
@@ -15,8 +17,8 @@ public class RecentAssetResponse
 {
     public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
-    public string AssetType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public AssetType AssetType { get; set; }
+    public AssetStatus Status { get; set; }
     public string FileUrl { get; set; } = string.Empty;
     public DateTime UploadedAt { get; set; }
 }

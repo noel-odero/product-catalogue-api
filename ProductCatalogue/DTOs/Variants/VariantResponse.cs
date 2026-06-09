@@ -1,3 +1,5 @@
+using ProductCatalogue.Models;
+
 namespace ProductCatalogue.DTOs.Variants;
 
 public class VariantResponse
@@ -10,6 +12,6 @@ public class VariantResponse
     public string Size { get; set; } = string.Empty;
     public string Material { get; set; } = string.Empty;
     public string? Barcode { get; set; }
-    public string Status { get; set; } = string.Empty;
+    public VariantStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }
