@@ -83,6 +83,24 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Middleware pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "Product Catalogue API";
+        options.Theme = ScalarTheme.DeepSpace;
+    });
+}
 
+
+app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+
+app.Run();
 
 
