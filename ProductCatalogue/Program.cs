@@ -12,15 +12,16 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // controllers with JSOn enum conversion
-builder.Services.AddControllers().AddJsonOptions(Options =>
+builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    Options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    Options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 });
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")),
+    ServiceLifetime.Scoped
 );
 
 // Identity
@@ -32,14 +33,25 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 8;
     options.User.RequireUniqueEmail = true;
+
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+
+    options.SignIn.RequireConfirmedEmail = false;
 })
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
 
+// logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secret = jwtSettings["Secret"];
+var secret = jwtSettings["Secret"]
+    ?? throw new InvalidOperationException("JWT Secret is missing");
 
 builder.Services.AddAuthentication(options =>
 {
@@ -56,7 +68,8 @@ builder.Services.AddAuthentication(options =>
        ValidateIssuerSigningKey = true,
        ValidIssuer = jwtSettings["Issuer"],
        ValidAudience = jwtSettings["Audience"],
-       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret ?? string.Empty))
+       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+       ClockSkew = TimeSpan.Zero
 
     };
 });
@@ -68,12 +81,15 @@ builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 
 // CORS
+
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(allowedOrigins ?? Array.Empty<string>())
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -95,9 +111,12 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+
 app.UseCors("AllowFrontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 
