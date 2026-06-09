@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProductCatalogue.Data;
 using ProductCatalogue.Models;
+using ProductCatalogue.Services;
 using Scalar.AspNetCore;
 
 
@@ -44,6 +45,8 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
+// Services
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // logging
 builder.Logging.ClearProviders();
