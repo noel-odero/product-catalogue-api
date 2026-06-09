@@ -56,8 +56,8 @@ var secret = jwtSettings["Secret"]
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme; // authentication fail : 401
+}) 
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
