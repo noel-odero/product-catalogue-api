@@ -43,7 +43,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 
     options.SignIn.RequireConfirmedEmail = false;
 })
-.AddEntityFrameworkStores<AppDbContext>()
+.AddEntityFrameworkStores<AppDbContext>() //persistence
 .AddDefaultTokenProviders();
 
 // Services
@@ -79,7 +79,7 @@ builder.Services.AddAuthentication(options =>
        ValidIssuer = jwtSettings["Issuer"],
        ValidAudience = jwtSettings["Audience"],
        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-       ClockSkew = TimeSpan.Zero
+       ClockSkew = TimeSpan.Zero //no grace period - security
 
     };
 });
