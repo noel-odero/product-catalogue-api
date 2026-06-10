@@ -42,7 +42,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException(errors);
         }
 
-        return GenerateAuthResponse(user);
+        return await GenerateAuthResponse(user);
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -60,12 +60,12 @@ public class AuthService : IAuthService
         if(!result.Succeeded)
             throw new UnauthorizedAccessException("Invalid email or Password");
 
-        return GenerateAuthResponse(user);
+        return await GenerateAuthResponse(user);
     }
 
-    private AuthResponse GenerateAuthResponse(User user)
+    private async Task<AuthResponse> GenerateAuthResponse(User user)
     {
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
         var expiryInMinutes = _configuration.GetValue<int>("Jwt:ExpiryInMinutes");
 
         return new AuthResponse
@@ -82,20 +82,24 @@ public class AuthService : IAuthService
         };
     }
 
-    private string GenerateJwtToken(User user)
+    private async Task<string> GenerateJwtToken(User user)
     {
         var jwtSettings = _configuration.GetSection("Jwt");
         var secret = jwtSettings["Secret"]!;
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
         };
+         var roles = await _userManager.GetRolesAsync(user);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],

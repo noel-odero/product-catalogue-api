@@ -57,6 +57,11 @@ builder.Logging.AddConsole();
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secret = jwtSettings["Secret"]
     ?? throw new InvalidOperationException("JWT Secret is missing");
+if (string.IsNullOrWhiteSpace(secret))
+    throw new InvalidOperationException("JWT secret is missing");
+
+if (secret.Length < 32)
+    throw new InvalidOperationException("JWT secret must be at least 32 characters long");
 
 builder.Services.AddAuthentication(options =>
 {
