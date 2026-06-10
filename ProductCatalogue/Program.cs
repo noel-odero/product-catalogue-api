@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProductCatalogue.Data;
+using ProductCatalogue.Middleware;
 using ProductCatalogue.Models;
 using ProductCatalogue.Services;
 using Scalar.AspNetCore;
@@ -26,7 +27,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ServiceLifetime.Scoped
 );
 
-// Identity
+// Identity - membership system 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 {
     options.Password.RequireDigit = true;
@@ -114,6 +115,7 @@ if (app.Environment.IsDevelopment())
 }
 
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");

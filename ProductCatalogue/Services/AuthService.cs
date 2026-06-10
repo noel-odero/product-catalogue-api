@@ -5,18 +5,19 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using ProductCatalogue.DTOs.Auth;
 using ProductCatalogue.Models;
-
 namespace ProductCatalogue.Services;
 
 public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly SignInManager<User> _signInManager;
 
-    public AuthService(UserManager<User> userManager, IConfiguration configuration)
+    public AuthService(UserManager<User> userManager, IConfiguration configuration, SignInManager<User> signInManager)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _signInManager = signInManager;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -46,13 +47,18 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-            throw new UnauthorizedAccessException("Invalid email or password");
+        var user = await _userManager.FindByEmailAsync(request.Email) ?? throw new UnauthorizedAccessException("Invalid email or Password");
+        var result = await _signInManager.PasswordSignInAsync(
+            user,
+            request.Password,
+            isPersistent: false,
+            lockoutOnFailure: true
+        );
+        if(result.IsLockedOut)
+            throw new UnauthorizedAccessException("Account is locked out. Please try again later.");
 
-        var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!isPasswordValid)
-            throw new UnauthorizedAccessException("Invalid email or password");
+        if(!result.Succeeded)
+            throw new UnauthorizedAccessException("Invalid email or Password");
 
         return GenerateAuthResponse(user);
     }
