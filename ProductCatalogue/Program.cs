@@ -11,6 +11,7 @@ using ProductCatalogue.Models;
 using ProductCatalogue.Services;
 using Scalar.AspNetCore;
 using Microsoft.OpenApi;
+using Microsoft.AspNetCore.Authorization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -91,31 +92,26 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddOpenApi(options =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    options.AddOperationTransformer((operation, context, cancellationToken) =>
     {
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        var requiresAuth = context.Description.ActionDescriptor.EndpointMetadata
+            .OfType<IAuthorizeData>().Any()
+            && !context.Description.ActionDescriptor.EndpointMetadata
+                .OfType<IAllowAnonymous>().Any();
 
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        if (requiresAuth)
         {
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            Description = "Paste your JWT token (without the word Bearer)"
-        };
-
-        document.Security ??= new List<OpenApiSecurityRequirement>();
-        document.Security.Add(new OpenApiSecurityRequirement
-        {
-            [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
-        });
+            operation.Security ??= new List<OpenApiSecurityRequirement>();
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = new List<string>()
+            });
+        }
 
         return Task.CompletedTask;
     });
 });
 
-// OpenAPI
-builder.Services.AddOpenApi();
 
 // CORS
 

@@ -14,7 +14,7 @@ public class VariantConfigurations: IEntityTypeConfiguration<Variant>
         entity.Property(v => v.Colour).IsRequired().HasMaxLength(50);
         entity.Property(v => v.Size ).IsRequired().HasMaxLength(50);
         entity.Property(v => v.Material ).IsRequired().HasMaxLength(50);
-        entity.Property(v => v.Barcode ).IsRequired().HasMaxLength(100);
+        entity.Property(v => v.Barcode ).HasMaxLength(100);
         entity.Property(v => v.Status ).HasConversion<string>();
         entity.HasOne(v => v.Product).WithMany(p => p.Variants).HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
     }
