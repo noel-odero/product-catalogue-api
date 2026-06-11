@@ -13,5 +13,5 @@ public class VariantResponse
     public string Material { get; set; } = string.Empty;
     public string? Barcode { get; set; }
     public VariantStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }

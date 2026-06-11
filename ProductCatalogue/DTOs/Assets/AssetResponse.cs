@@ -15,7 +15,7 @@ public class AssetResponse
     public string FileName { get; set; } = string.Empty;
     public string FileUrl { get; set; } = string.Empty;
     public string? RejectionReason { get; set; }
-    public DateTime UploadedAt { get; set; }
+    public DateTimeOffset UploadedAt { get; set; }
     public List<AssetStatusHistoryResponse> StatusHistory { get; set; } = new();
 }
 
@@ -24,5 +24,5 @@ public class AssetStatusHistoryResponse
     public AssetStatus PreviousStatus { get; set; }
     public AssetStatus NewStatus { get; set; }
     public string? Comment { get; set; }
-    public DateTime ChangedAt { get; set; }
+    public DateTimeOffset ChangedAt { get; set; }
 }
