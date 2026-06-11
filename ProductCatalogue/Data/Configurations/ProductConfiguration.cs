@@ -8,7 +8,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> entity)
     {
-        entity.HasKey(p=> p.Id); // primary key
+        entity.HasKey(p=> p.Id); 
         entity.HasIndex(p => p.ProductCode).IsUnique();
         entity.Property(p => p.Name).IsRequired().HasMaxLength(200);
         entity.Property(p => p.ProductCode).IsRequired().HasMaxLength(50);
