@@ -48,10 +48,9 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email) ?? throw new UnauthorizedAccessException("Invalid email or Password");
-        var result = await _signInManager.PasswordSignInAsync(
+        var result = await _signInManager.CheckPasswordSignInAsync(
             user,
             request.Password,
-            isPersistent: false,
             lockoutOnFailure: true
         );
         if(result.IsLockedOut)
