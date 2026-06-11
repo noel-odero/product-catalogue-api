@@ -10,6 +10,7 @@ using ProductCatalogue.Middleware;
 using ProductCatalogue.Models;
 using ProductCatalogue.Services;
 using Scalar.AspNetCore;
+using Microsoft.OpenApi;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,8 +49,9 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
-// logging
+// loggingi
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
@@ -85,7 +87,32 @@ builder.Services.AddAuthentication(options =>
 });
 
 
-builder.Services.AddAuthorization();
+
+
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description = "Paste your JWT token (without the word Bearer)"
+        };
+
+        document.Security ??= new List<OpenApiSecurityRequirement>();
+        document.Security.Add(new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+        });
+
+        return Task.CompletedTask;
+    });
+});
 
 // OpenAPI
 builder.Services.AddOpenApi();

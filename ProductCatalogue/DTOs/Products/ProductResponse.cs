@@ -13,6 +13,6 @@ public class ProductResponse
     public string TargetMarket { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
     public ProductStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }

@@ -15,8 +15,8 @@ public class ProductDetailResponse
     public string TargetMarket { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
     public ProductStatus Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
     public List<VariantResponse> Variants { get; set; } = new();
     public List<AssetResponse> Assets { get; set; } = new();
     public ReadinessResponse Readiness { get; set; } = null!;
