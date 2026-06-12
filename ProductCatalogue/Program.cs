@@ -45,14 +45,14 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 
     options.SignIn.RequireConfirmedEmail = false;
 })
-.AddEntityFrameworkStores<AppDbContext>() //persistence
+.AddEntityFrameworkStores<AppDbContext>() 
 .AddDefaultTokenProviders();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 
-// loggingi
+// logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
@@ -89,9 +89,23 @@ builder.Services.AddAuthentication(options =>
 
 
 
-
 builder.Services.AddOpenApi(options =>
 {
+    // Declare the scheme
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+        };
+        return Task.CompletedTask;
+    });
+
+    //  only to endpoints that actually require auth
     options.AddOperationTransformer((operation, context, cancellationToken) =>
     {
         var requiresAuth = context.Description.ActionDescriptor.EndpointMetadata

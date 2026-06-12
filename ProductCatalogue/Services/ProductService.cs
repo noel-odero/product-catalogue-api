@@ -87,7 +87,6 @@ public class ProductService : IProductService
         }
         catch (DbUpdateException)
         {
-            // race-condition safety net — the unique DB constraint is the real guard
             throw new InvalidOperationException(
                 $"Product code '{request.ProductCode}' already exists");
         }
