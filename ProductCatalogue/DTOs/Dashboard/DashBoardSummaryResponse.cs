@@ -20,5 +20,5 @@ public class RecentAssetResponse
     public AssetType AssetType { get; set; }
     public AssetStatus Status { get; set; }
     public string FileUrl { get; set; } = string.Empty;
-    public DateTime UploadedAt { get; set; }
+    public DateTimeOffset UploadedAt { get; set; }
 }

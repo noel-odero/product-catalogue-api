@@ -3,7 +3,7 @@ namespace ProductCatalogue.DTOs.Auth;
 public class AuthResponse
 {
     public required string Token {get; init;}
-    public DateTime ExpiresAt {get; init;}
+    public DateTimeOffset ExpiresAt {get; init;}
     public required UserInfo User {get; init;}
 }
 

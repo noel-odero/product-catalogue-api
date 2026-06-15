@@ -6,5 +6,5 @@ public class User : IdentityUser<Guid> // email, passwornHash, username and auth
 {
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; } = DateTime.UtcNow;
 }

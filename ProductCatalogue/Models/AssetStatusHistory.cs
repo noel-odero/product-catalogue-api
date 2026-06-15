@@ -7,7 +7,7 @@ public class AssetStatusHistory
     public AssetStatus PreviousStatus { get; set; }
     public AssetStatus NewStatus { get; set; }
     public Guid ChangedBy { get; set; }
-    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset ChangedAt { get; set; } = DateTime.UtcNow;
     public string? Comment { get; set; }
 
     // navigation property

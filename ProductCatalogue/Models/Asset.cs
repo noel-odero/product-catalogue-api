@@ -17,7 +17,7 @@ public class Asset
     public List<string> Tags { get; set; } = new List<string>();
     public string? RejectionReason { get; set; }
     public Guid UploadedBy { get; set; }
-    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset UploadedAt { get; set; } = DateTime.UtcNow;
 
     // navigation properties
     public Product Product { get; set; } = null!;

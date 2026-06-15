@@ -11,7 +11,7 @@ public class Variant
     public string Material { get; set; } = string.Empty;
     public string? Barcode { get; set; }
     public VariantStatus Status { get; set; } = VariantStatus.Active;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; } = DateTime.UtcNow;
 
     // navigation properties
     public Product Product { get; set; } = null!;
