@@ -14,7 +14,7 @@ public class Asset
     public AssetStatus Status { get; set; } = AssetStatus.Uploaded;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public List<string> Tags { get; set; } = new List<string>();
+    public List<AssetTag> Tags { get; set; } = new();
     public string? RejectionReason { get; set; }
     public Guid UploadedBy { get; set; }
     public DateTimeOffset UploadedAt { get; set; } = DateTime.UtcNow;

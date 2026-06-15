@@ -16,6 +16,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Variant> Variants => Set<Variant>();
     public DbSet<Asset> Assets => Set<Asset>();
+    public DbSet<AssetTag> AssetTags => Set<AssetTag>();
     public DbSet<AssetStatusHistory> AssetStatusHistories => Set<AssetStatusHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -60,7 +60,7 @@ public static class ProductMappings
                 Status = a.Status,
                 Title = a.Title,
                 Description = a.Description,
-                Tags = a.Tags,
+                Tags = a.Tags.Select(t => t.Tag).ToList(),
                 FileName = a.FileName,
                 FileUrl = "/uploads/" + a.FileName,
                 RejectionReason = a.RejectionReason,
