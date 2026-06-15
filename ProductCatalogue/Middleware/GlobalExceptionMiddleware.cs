@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using ProductCatalogue.Exceptions;
 
 namespace ProductCatalogue.Middleware;
 
@@ -35,10 +36,11 @@ public class GlobalExceptionMiddleware
 
         var (statusCode, message) = exception switch
         {
+            NotFoundException        => (HttpStatusCode.NotFound, exception.Message),
+            ConflictException        => (HttpStatusCode.Conflict, exception.Message),
+            ValidationException      => (HttpStatusCode.BadRequest, exception.Message),
+            BusinessRuleException    => (HttpStatusCode.UnprocessableEntity, exception.Message),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, exception.Message),
-            InvalidOperationException => (HttpStatusCode.Conflict, exception.Message),
-            KeyNotFoundException => (HttpStatusCode.NotFound, exception.Message),
-            ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
 

@@ -4,9 +4,9 @@ namespace ProductCatalogue.DTOs.Assets;
 
 public class AssetListResponse
 {
-    public List<AssetResponse> Items { get; set; } = new();
-    public int TotalCount { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages { get; set; }
+    public List<AssetResponse> Items { get; init; } = new();
+    public int TotalCount { get; init; }
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public int TotalPages { get; init; }
 }
