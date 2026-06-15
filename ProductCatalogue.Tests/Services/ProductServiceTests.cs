@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Products;
+using ProductCatalogue.Exceptions;
 using ProductCatalogue.Models;
 using ProductCatalogue.Services;
 
 namespace ProductCatalogue.Tests.Services;
 
-public class ProductServiceTests
+public class ProductServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly ProductService _service;
@@ -21,7 +22,9 @@ public class ProductServiceTests
         _service = new ProductService(_context);
     }
 
-    //  seeding helpers 
+    public void Dispose() => _context.Dispose();
+
+    // seeding helpers
 
     private async Task<Product> SeedProductAsync(
         ProductStatus status = ProductStatus.Draft,
@@ -88,10 +91,10 @@ public class ProductServiceTests
         Season = "AW24",
     };
 
-    //  Create 
+    // CreateAsync
 
     [Fact]
-    public async Task Create_Product_With_Valid_Data_Succeeds()
+    public async Task CreateAsync_WithValidData_Succeeds()
     {
         var result = await _service.CreateAsync(ValidCreateRequest());
 
@@ -103,18 +106,18 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task Create_Product_With_Duplicate_Code_Fails()
+    public async Task CreateAsync_WithDuplicateCode_ThrowsConflict()
     {
         await _service.CreateAsync(ValidCreateRequest());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ConflictException>(
             () => _service.CreateAsync(ValidCreateRequest()));
     }
 
-    //  GetById 
+    // GetByIdAsync
 
     [Fact]
-    public async Task Get_Product_By_Id_Returns_Product()
+    public async Task GetByIdAsync_WhenProductExists_ReturnsProduct()
     {
         var product = await SeedProductAsync(withVariant: true, withAsset: true);
 
@@ -127,16 +130,16 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task Get_Product_By_Non_Existing_Id_Throws_NotFound()
+    public async Task GetByIdAsync_WhenIdNotFound_ThrowsNotFound()
     {
-        await Assert.ThrowsAsync<KeyNotFoundException>(
+        await Assert.ThrowsAsync<NotFoundException>(
             () => _service.GetByIdAsync(Guid.NewGuid()));
     }
 
-    //  Submit for review 
+    // SubmitForReviewAsync
 
     [Fact]
-    public async Task Submit_Draft_Product_With_Variant_And_Asset_Succeeds()
+    public async Task SubmitForReviewAsync_WithVariantAndAsset_Succeeds()
     {
         var product = await SeedProductAsync(withVariant: true, withAsset: true);
 
@@ -149,36 +152,35 @@ public class ProductServiceTests
     [InlineData(false, true)]   // no variants
     [InlineData(true, false)]   // no assets
     [InlineData(false, false)]  // neither
-    public async Task Submit_Product_Missing_Requirements_Fails(
+    public async Task SubmitForReviewAsync_WhenMissingRequirements_ThrowsBusinessRule(
         bool withVariant,
         bool withAsset)
     {
         var product = await SeedProductAsync(
             withVariant: withVariant, withAsset: withAsset);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<BusinessRuleException>(
             () => _service.SubmitForReviewAsync(product.Id));
     }
-
 
     [Theory]
     [InlineData(ProductStatus.InReview)]
     [InlineData(ProductStatus.ReadyToPublish)]
     [InlineData(ProductStatus.Published)]
     [InlineData(ProductStatus.Archived)]
-    public async Task Submit_Non_Draft_Product_Fails(ProductStatus status)
+    public async Task SubmitForReviewAsync_WhenNotDraft_ThrowsConflict(ProductStatus status)
     {
         var product = await SeedProductAsync(
             status: status, withVariant: true, withAsset: true);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ConflictException>(
             () => _service.SubmitForReviewAsync(product.Id));
     }
 
-    //  Publish 
+    // PublishAsync
 
     [Fact]
-    public async Task Publish_Ready_Product_Succeeds()
+    public async Task PublishAsync_WhenReady_Succeeds()
     {
         var product = await SeedProductAsync(status: ProductStatus.ReadyToPublish);
 
@@ -192,25 +194,25 @@ public class ProductServiceTests
     [InlineData(ProductStatus.InReview)]
     [InlineData(ProductStatus.Published)]
     [InlineData(ProductStatus.Archived)]
-    public async Task Publish_Product_That_Is_Not_Ready_Fails(ProductStatus status)
+    public async Task PublishAsync_WhenNotReady_ThrowsConflict(ProductStatus status)
     {
         var product = await SeedProductAsync(status: status);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ConflictException>(
             () => _service.PublishAsync(product.Id));
     }
 
     [Fact]
-    public async Task Publish_Non_Existing_Product_Throws_NotFound()
+    public async Task PublishAsync_WhenIdNotFound_ThrowsNotFound()
     {
-        await Assert.ThrowsAsync<KeyNotFoundException>(
+        await Assert.ThrowsAsync<NotFoundException>(
             () => _service.PublishAsync(Guid.NewGuid()));
     }
 
-    //  Archive 
+    // ArchiveAsync
 
     [Fact]
-    public async Task Archive_Product_Succeeds()
+    public async Task ArchiveAsync_WhenPublished_Succeeds()
     {
         var product = await SeedProductAsync(status: ProductStatus.Published);
 
@@ -220,18 +222,18 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task Archive_Already_Archived_Product_Fails()
+    public async Task ArchiveAsync_WhenAlreadyArchived_ThrowsConflict()
     {
         var product = await SeedProductAsync(status: ProductStatus.Archived);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ConflictException>(
             () => _service.ArchiveAsync(product.Id));
     }
 
-    //  Update 
+    // UpdateAsync
 
     [Fact]
-    public async Task Update_Product_Succeeds()
+    public async Task UpdateAsync_WithValidData_Succeeds()
     {
         var product = await SeedProductAsync();
 
@@ -247,18 +249,18 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task Update_Archived_Product_Fails()
+    public async Task UpdateAsync_WhenArchived_ThrowsConflict()
     {
         var product = await SeedProductAsync(status: ProductStatus.Archived);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ConflictException>(
             () => _service.UpdateAsync(product.Id, new UpdateProductRequest { Name = "New" }));
     }
 
-    //  Delete 
+    // DeleteAsync
 
     [Fact]
-    public async Task Delete_Draft_Product_Succeeds()
+    public async Task DeleteAsync_WhenDraft_Succeeds()
     {
         var product = await SeedProductAsync();
 
@@ -269,25 +271,25 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task Delete_Published_Product_Fails()
+    public async Task DeleteAsync_WhenPublished_ThrowsConflict()
     {
         var product = await SeedProductAsync(status: ProductStatus.Published);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<ConflictException>(
             () => _service.DeleteAsync(product.Id));
     }
 
     [Fact]
-    public async Task Delete_Non_Existing_Product_Throws_NotFound()
+    public async Task DeleteAsync_WhenIdNotFound_ThrowsNotFound()
     {
-        await Assert.ThrowsAsync<KeyNotFoundException>(
+        await Assert.ThrowsAsync<NotFoundException>(
             () => _service.DeleteAsync(Guid.NewGuid()));
     }
 
-    //  GetAll 
+    // GetAllAsync
 
     [Fact]
-    public async Task Get_All_Returns_Paginated_Results()
+    public async Task GetAllAsync_WithPaging_ReturnsPaginatedResults()
     {
         for (var i = 1; i <= 15; i++)
             await SeedProductAsync(productCode: $"PROD-{i:000}");
@@ -304,7 +306,7 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task Get_All_Filters_By_Brand()
+    public async Task GetAllAsync_WhenFilteredByBrand_ReturnsMatchingProducts()
     {
         await SeedProductAsync(productCode: "PROD-001", brand: "Heritage");
         await SeedProductAsync(productCode: "PROD-002", brand: "Essentials");

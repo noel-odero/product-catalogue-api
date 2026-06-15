@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Products;
+using ProductCatalogue.Exceptions;
 using ProductCatalogue.Mappings;
 using ProductCatalogue.Models;
 
@@ -51,7 +53,7 @@ public class ProductService : IProductService
             .Where(p => p.Id == id)
             .Select(ProductMappings.ToDetailResponseExpression())
             .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new KeyNotFoundException($"Product with id '{id}' not found");
+            ?? throw new NotFoundException($"Product with id '{id}' not found");
     }
 
     public async Task<ProductResponse> CreateAsync(
@@ -62,7 +64,7 @@ public class ProductService : IProductService
             .AnyAsync(p => p.ProductCode == request.ProductCode, cancellationToken);
 
         if (exists)
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 $"Product code '{request.ProductCode}' already exists");
 
         var product = new Product
@@ -85,7 +87,8 @@ public class ProductService : IProductService
         {
             await _context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (
+            ex.InnerException is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation)
         {
             throw new InvalidOperationException(
                 $"Product code '{request.ProductCode}' already exists");
@@ -102,7 +105,7 @@ public class ProductService : IProductService
         var product = await GetProductOrThrow(id, cancellationToken);
 
         if (product.Status == ProductStatus.Archived)
-            throw new InvalidOperationException("Archived products cannot be updated");
+            throw new ConflictException("Archived products cannot be updated");
 
         if (!string.IsNullOrWhiteSpace(request.Name))
             product.Name = request.Name;
@@ -137,7 +140,7 @@ public class ProductService : IProductService
             .Include(p => p.Variants)
             .Include(p => p.Assets)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
-            ?? throw new KeyNotFoundException($"Product with id '{id}' not found");
+            ?? throw new NotFoundException($"Product with id '{id}' not found");
 
         ValidateReviewSubmission(product);
 
@@ -156,7 +159,7 @@ public class ProductService : IProductService
         var product = await GetProductOrThrow(id, cancellationToken);
 
         if (product.Status != ProductStatus.ReadyToPublish)
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Only products ready for publication can be published");
 
         product.Status = ProductStatus.Published;
@@ -174,7 +177,7 @@ public class ProductService : IProductService
         var product = await GetProductOrThrow(id, cancellationToken);
 
         if (product.Status == ProductStatus.Archived)
-            throw new InvalidOperationException("Product is already archived");
+            throw new ConflictException("Product is already archived");
 
         product.Status = ProductStatus.Archived;
         product.UpdatedAt = DateTime.UtcNow;
@@ -191,7 +194,7 @@ public class ProductService : IProductService
         var product = await GetProductOrThrow(id, cancellationToken);
 
         if (product.Status == ProductStatus.Published)
-            throw new InvalidOperationException("Published products cannot be deleted");
+            throw new ConflictException("Published products cannot be deleted");
 
         _context.Products.Remove(product);
 
@@ -206,7 +209,7 @@ public class ProductService : IProductService
     {
         return await _context.Products
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
-            ?? throw new KeyNotFoundException($"Product with id '{id}' not found");
+            ?? throw new NotFoundException($"Product with id '{id}' not found");
     }
 
     private static IQueryable<Product> ApplyFilters(
@@ -238,22 +241,22 @@ public class ProductService : IProductService
     private static void ValidateReviewSubmission(Product product)
     {
         if (product.Status != ProductStatus.Draft)
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 "Only draft products can be submitted for review");
 
         if (string.IsNullOrWhiteSpace(product.Name))
-            throw new InvalidOperationException("Product must have a name");
+            throw new BusinessRuleException("Product must have a name");
 
         if (string.IsNullOrWhiteSpace(product.ProductCode))
-            throw new InvalidOperationException("Product must have a product code");
+            throw new BusinessRuleException("Product must have a product code");
 
         if (string.IsNullOrWhiteSpace(product.Description))
-            throw new InvalidOperationException("Product must have a description");
+            throw new BusinessRuleException("Product must have a description");
 
         if (!product.Variants.Any())
-            throw new InvalidOperationException("Product must have at least one variant");
+            throw new BusinessRuleException("Product must have at least one variant");
 
         if (!product.Assets.Any())
-            throw new InvalidOperationException("Product must have at least one uploaded asset");
+            throw new BusinessRuleException("Product must have at least one uploaded asset");
     }
 }
