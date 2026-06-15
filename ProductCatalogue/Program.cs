@@ -51,6 +51,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IVariantService, VariantService>();
 
 // logging
 builder.Logging.ClearProviders();

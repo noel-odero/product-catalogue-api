@@ -18,7 +18,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult> GetAll(
         [FromQuery] ProductQueryParams query,
         CancellationToken cancellationToken)
     {
@@ -27,7 +27,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(
+    public async Task<ActionResult> GetById(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -36,7 +36,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(
+    public async Task<ActionResult> Create(
         [FromBody] CreateProductRequest request,
         CancellationToken cancellationToken)
     {
@@ -51,11 +51,11 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _productService.UpdateAsync(id, request, cancellationToken);
-        return Ok(result);
+        return NoContent();
     }
 
     [HttpPost("{id:guid}/submit-for-review")]
-    public async Task<IActionResult> SubmitForReview(
+    public async Task<ActionResult> SubmitForReview(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -64,7 +64,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/publish")]
-    public async Task<IActionResult> Publish(
+    public async Task<ActionResult> Publish(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -78,7 +78,7 @@ public class ProductsController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await _productService.ArchiveAsync(id, cancellationToken);
-        return Ok(result);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}")]

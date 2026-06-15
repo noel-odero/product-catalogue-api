@@ -17,7 +17,7 @@ public class VariantService : IVariantService
         _context = context;
     }
 
-    public async Task<List<VariantResponse>> GetByProductAsync(Guid productId, CreateVariantRequest request, CancellationToken cancellationToken = default)
+    public async Task<List<VariantResponse>> GetByProductAsync(Guid productId, CancellationToken cancellationToken = default)
     {
         await EnsureProductExists(productId, cancellationToken);
 
