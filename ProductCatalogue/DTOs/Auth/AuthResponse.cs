@@ -2,15 +2,15 @@ namespace ProductCatalogue.DTOs.Auth;
 
 public class AuthResponse
 {
-    public string Token { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public UserInfo User { get; set; } = null!;
+    public required string Token {get; init;}
+    public DateTime ExpiresAt {get; init;}
+    public required UserInfo User {get; init;}
 }
 
 public class UserInfo
 {
-    public Guid Id { get; set; }
-    public string Email { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
+    public Guid Id {get; init;}
+    public required string Email {get; init;}
+    public required string FirstName {get; init;}
+    public required string LastName {get; init;}
 }

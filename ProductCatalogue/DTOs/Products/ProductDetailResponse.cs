@@ -6,30 +6,30 @@ namespace ProductCatalogue.DTOs.Products;
 
 public class ProductDetailResponse
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string ProductCode { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string Brand { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty;
-    public string TargetMarket { get; set; } = string.Empty;
-    public string Season { get; set; } = string.Empty;
-    public ProductStatus Status { get; set; }
-    public DateTimeOffset CreatedAt { get; set; }
-    public DateTimeOffset UpdatedAt { get; set; }
-    public List<VariantResponse> Variants { get; set; } = new();
-    public List<AssetResponse> Assets { get; set; } = new();
-    public ReadinessResponse Readiness { get; set; } = null!;
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string ProductCode { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+    public string Brand { get; init; } = string.Empty;
+    public string Category { get; init; } = string.Empty;
+    public string TargetMarket { get; init; } = string.Empty;
+    public string Season { get; init; } = string.Empty;
+    public ProductStatus Status { get; init; }
+    public DateTimeOffset CreatedAt { get; init; }
+    public DateTimeOffset UpdatedAt { get; init; }
+    public List<VariantResponse> Variants { get; init; } = new();
+    public List<AssetResponse> Assets { get; init; } = new();
+    public ReadinessResponse? Readiness { get; init; }
 }
 
 public class ReadinessResponse
 {
-    public bool HasRequiredInfo { get; set; }
-    public bool HasMainImage { get; set; }
-    public bool AllVariantsHaveImages { get; set; }
-    public bool NoRejectedAssets { get; set; }
-    public bool AllRequiredAssetsApproved { get; set; }
-    public bool CanPublish { get; set; }
-    public int PassedCount { get; set; }
-    public int TotalCount { get; set; }
+    public bool HasRequiredInfo { get; init; }
+    public bool HasMainImage { get; init; }
+    public bool AllVariantsHaveImages { get; init; }
+    public bool NoRejectedAssets { get; init; }
+    public bool AllRequiredAssetsApproved { get; init; }
+    public bool CanPublish { get; init; }
+    public int PassedCount { get; init; }
+    public int TotalCount { get; init; }
 }
