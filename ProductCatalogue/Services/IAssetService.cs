@@ -22,4 +22,16 @@ public interface IAssetService
         Guid productId,
         Guid assetId,
         CancellationToken cancellationToken = default);
+
+    // add to IAssetService
+    Task<AssetResponse> ApproveAsync(
+        Guid productId,
+        Guid assetId,
+        CancellationToken cancellationToken = default);
+
+    Task<AssetResponse> RejectAsync(
+        Guid productId,
+        Guid assetId,
+        RejectAssetRequest request,
+        CancellationToken cancellationToken = default);
 }

@@ -152,7 +152,53 @@ public class AssetService : IAssetService
         _context.Assets.Remove(asset);
         await _context.SaveChangesAsync(cancellationToken);
     }
+    public async Task<AssetResponse> ApproveAsync(
+    Guid productId,
+    Guid assetId,
+    CancellationToken cancellationToken = default)
+    {
+        var asset = await GetReviewableAssetOrThrow(productId, assetId, cancellationToken);
 
+        if (asset.Status != AssetStatus.PendingReview)
+            throw new ConflictException(
+                "Only assets pending review can be approved");
+
+        TransitionStatus(
+            asset,
+            AssetStatus.Approved,
+            comment: "Asset approved",
+            rejectionReason: null);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return AssetMappings.ToResponse(asset, _storage);
+    }
+
+    public async Task<AssetResponse> RejectAsync(
+    Guid productId,
+    Guid assetId,
+    RejectAssetRequest request,
+    CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            throw new ValidationException("A rejection reason is required");
+
+        var asset = await GetReviewableAssetOrThrow(productId, assetId, cancellationToken);
+
+        if (asset.Status != AssetStatus.PendingReview)
+            throw new ConflictException(
+                "Only assets pending review can be rejected");
+
+        TransitionStatus(
+            asset,
+            AssetStatus.Rejected,
+            comment: request.Reason,
+            rejectionReason: request.Reason);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return AssetMappings.ToResponse(asset, _storage);
+    }
     // private helpers
 
     private async Task<Product> GetProductOrThrow(
@@ -195,5 +241,40 @@ public class AssetService : IAssetService
             throw new ValidationException(
                 $"File type '{file.ContentType}' is not allowed. " +
                 "Allowed types: JPEG, PNG, WebP, PDF");
+    }
+
+    private async Task<Asset> GetReviewableAssetOrThrow(
+    Guid productId,
+    Guid assetId,
+    CancellationToken cancellationToken)
+    {
+        return await _context.Assets
+            .Include(a => a.Tags)
+            .Include(a => a.StatusHistory)
+            .FirstOrDefaultAsync(
+                a => a.Id == assetId && a.ProductId == productId,
+                cancellationToken)
+            ?? throw new NotFoundException(
+                $"Asset with id '{assetId}' not found for this product");
+    }
+    private static void TransitionStatus(
+    Asset asset,
+    AssetStatus newStatus,
+    string comment,
+    string? rejectionReason)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        asset.StatusHistory.Add(new AssetStatusHistory
+        {
+            PreviousStatus = asset.Status,
+            NewStatus = newStatus,
+            Comment = comment,
+            ChangedBy = Guid.Empty,
+            ChangedAt = now,
+        });
+
+        asset.Status = newStatus;
+        asset.RejectionReason = rejectionReason;
     }
 }
