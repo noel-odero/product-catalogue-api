@@ -12,6 +12,8 @@ using ProductCatalogue.Services;
 using Scalar.AspNetCore;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authorization;
+using ProductCatalogue.Settings;
+using ProductCatalogue.Services.Storage;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +49,15 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 })
 .AddEntityFrameworkStores<AppDbContext>() 
 .AddDefaultTokenProviders();
+
+
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
+var storageProvider = builder.Configuration["Storage:Provider"];
+
+if(storageProvider == "Cloudinary")
+    builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
+else
+    builder.Services.AddScoped<IStorageService, LocalStorageService>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -160,6 +171,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseCors("AllowFrontend");
 
