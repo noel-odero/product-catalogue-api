@@ -14,6 +14,7 @@ using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authorization;
 using ProductCatalogue.Settings;
 using ProductCatalogue.Services.Storage;
+using ProductCatalogue.Extensions;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -100,44 +101,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
-
-builder.Services.AddOpenApi(options =>
-{
-    // Declare the scheme
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-        };
-        return Task.CompletedTask;
-    });
-
-    //  only to endpoints that actually require auth
-    options.AddOperationTransformer((operation, context, cancellationToken) =>
-    {
-        var requiresAuth = context.Description.ActionDescriptor.EndpointMetadata
-            .OfType<IAuthorizeData>().Any()
-            && !context.Description.ActionDescriptor.EndpointMetadata
-                .OfType<IAllowAnonymous>().Any();
-
-        if (requiresAuth)
-        {
-            operation.Security ??= new List<OpenApiSecurityRequirement>();
-            operation.Security.Add(new OpenApiSecurityRequirement
-            {
-                [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = new List<string>()
-            });
-        }
-
-        return Task.CompletedTask;
-    });
-});
+builder.Services.AddOpenApiWithAuth();
 
 
 // CORS
