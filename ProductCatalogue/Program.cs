@@ -135,15 +135,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Middleware pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference(options =>
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
     {
         options.Title = "Product Catalogue API";
         options.Theme = ScalarTheme.DeepSpace;
-    });
-}
+    });    
+
 
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
