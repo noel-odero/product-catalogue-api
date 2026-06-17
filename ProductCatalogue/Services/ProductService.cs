@@ -93,7 +93,7 @@ public class ProductService : IProductService
         catch (DbUpdateException ex) when (
             ex.InnerException is PostgresException pg && pg.SqlState == PostgresErrorCodes.UniqueViolation)
         {
-            throw new InvalidOperationException(
+            throw new ConflictException(
                 $"Product code '{request.ProductCode}' already exists");
         }
 
