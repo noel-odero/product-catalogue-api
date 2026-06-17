@@ -44,7 +44,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    [HttpPatch("{id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateProductRequest request,
