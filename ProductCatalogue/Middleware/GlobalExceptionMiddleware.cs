@@ -40,7 +40,6 @@ public class GlobalExceptionMiddleware
             ConflictException        => (HttpStatusCode.Conflict, exception.Message),
             ValidationException      => (HttpStatusCode.BadRequest, exception.Message),
             BusinessRuleException    => (HttpStatusCode.UnprocessableEntity, exception.Message),
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, exception.Message),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
 

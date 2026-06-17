@@ -64,10 +64,13 @@ public class AssetService : IAssetService
         return AssetMappings.ToResponse(asset, _storage);
     }
 
+    
+
     public async Task<AssetResponse> UploadAsync(
-        Guid productId,
-        UploadAssetRequest request,
-        CancellationToken cancellationToken = default)
+    Guid productId,
+    UploadAssetRequest request,
+    Guid userId,
+    CancellationToken cancellationToken = default)
     {
         var product = await GetProductOrThrow(productId, cancellationToken);
 
@@ -87,17 +90,23 @@ public class AssetService : IAssetService
                     "The specified variant does not belong to this product");
         }
 
-    
         var stored = await _storage.SaveAsync(request.File, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
+
+        // assets uploaded while the product is already under review go straight to
+        // PendingReview so a reviewer can act on them; otherwise they wait at Uploaded
+        // until the product is submitted for review.
+        var initialStatus = product.Status == ProductStatus.InReview
+            ? AssetStatus.PendingReview
+            : AssetStatus.Uploaded;
 
         var asset = new Asset
         {
             ProductId = productId,
             VariantId = request.VariantId,
             AssetType = request.AssetType,
-            Status = AssetStatus.Uploaded,
+            Status = initialStatus,
             Title = request.Title,
             Description = request.Description,
             OriginalFileName = stored.OriginalFileName,
@@ -105,7 +114,7 @@ public class AssetService : IAssetService
             ContentType = stored.ContentType,
             FileSize = stored.FileSize,
             StoragePath = stored.StoragePath,
-            UploadedBy = Guid.Empty, 
+            UploadedBy = userId,
             UploadedAt = now,
             Tags = request.Tags
                 .Where(t => !string.IsNullOrWhiteSpace(t))
@@ -115,10 +124,12 @@ public class AssetService : IAssetService
             {
                 new()
                 {
-                    PreviousStatus = AssetStatus.Uploaded,
-                    NewStatus = AssetStatus.Uploaded,
-                    Comment = "Asset uploaded",
-                    ChangedBy = Guid.Empty,
+                    PreviousStatus = initialStatus,
+                    NewStatus = initialStatus,
+                    Comment = initialStatus == AssetStatus.PendingReview
+                        ? "Uploaded during review"
+                        : "Asset uploaded",
+                    ChangedBy = userId,
                     ChangedAt = now,
                 }
             },
@@ -155,6 +166,7 @@ public class AssetService : IAssetService
     public async Task<AssetResponse> ApproveAsync(
     Guid productId,
     Guid assetId,
+    Guid userId,
     CancellationToken cancellationToken = default)
     {
         var asset = await GetReviewableAssetOrThrow(productId, assetId, cancellationToken);
@@ -166,8 +178,9 @@ public class AssetService : IAssetService
         TransitionStatus(
             asset,
             AssetStatus.Approved,
-            comment: "Asset approved",
-            rejectionReason: null);
+            "Asset approved",
+            null,
+            userId);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -178,6 +191,7 @@ public class AssetService : IAssetService
     Guid productId,
     Guid assetId,
     RejectAssetRequest request,
+    Guid userId,
     CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Reason))
@@ -192,8 +206,9 @@ public class AssetService : IAssetService
         TransitionStatus(
             asset,
             AssetStatus.Rejected,
-            comment: request.Reason,
-            rejectionReason: request.Reason);
+            comment: "Asset rejected.",
+            rejectionReason: request.Reason,
+            userId);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -257,20 +272,22 @@ public class AssetService : IAssetService
             ?? throw new NotFoundException(
                 $"Asset with id '{assetId}' not found for this product");
     }
-    private static void TransitionStatus(
+    private void TransitionStatus(
     Asset asset,
     AssetStatus newStatus,
     string comment,
-    string? rejectionReason)
+    string? rejectionReason,
+    Guid userId)
     {
         var now = DateTimeOffset.UtcNow;
 
-        asset.StatusHistory.Add(new AssetStatusHistory
+        _context.Set<AssetStatusHistory>().Add(new AssetStatusHistory
         {
+            AssetId = asset.Id,
             PreviousStatus = asset.Status,
             NewStatus = newStatus,
             Comment = comment,
-            ChangedBy = Guid.Empty,
+            ChangedBy = userId,
             ChangedAt = now,
         });
 

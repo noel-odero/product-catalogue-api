@@ -11,10 +11,13 @@ namespace ProductCatalogue.Services;
 public class ProductService : IProductService
 {
     private readonly AppDbContext _context;
+    private readonly IReadinessService _readinessService;
 
-    public ProductService(AppDbContext context)
+
+    public ProductService(AppDbContext context, IReadinessService readinessService)
     {
         _context = context;
+        _readinessService = readinessService;
     }
 
     public async Task<ProductListResponse> GetAllAsync(
@@ -133,19 +136,37 @@ public class ProductService : IProductService
     }
 
     public async Task<ProductResponse> SubmitForReviewAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
+    Guid id,
+    CancellationToken cancellationToken = default)
     {
         var product = await _context.Products
             .Include(p => p.Variants)
-            .Include(p => p.Assets)
+            .Include(p => p.Assets)        // assets only — NOT their status history
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"Product with id '{id}' not found");
 
         ValidateReviewSubmission(product);
 
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var asset in product.Assets.Where(a => a.Status == AssetStatus.Uploaded))
+        {
+            // add a NEW history row — EF inserts it because it has no key yet
+            _context.Set<AssetStatusHistory>().Add(new AssetStatusHistory
+            {
+                AssetId = asset.Id,
+                PreviousStatus = AssetStatus.Uploaded,
+                NewStatus = AssetStatus.PendingReview,
+                Comment = "Submitted for review",
+                ChangedBy = Guid.Empty,
+                ChangedAt = now,
+            });
+
+            asset.Status = AssetStatus.PendingReview;
+        }
+
         product.Status = ProductStatus.InReview;
-        product.UpdatedAt = DateTime.UtcNow;
+        product.UpdatedAt = now;
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -153,22 +174,34 @@ public class ProductService : IProductService
     }
 
     public async Task<ProductResponse> PublishAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
+    Guid id,
+    CancellationToken cancellationToken = default)
     {
-        var product = await GetProductOrThrow(id, cancellationToken);
+        var product = await _context.Products
+            .Include(p => p.Variants)
+            .Include(p => p.Assets)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"Product with id '{id}' not found");
 
-        if (product.Status != ProductStatus.ReadyToPublish)
+        if (product.Status != ProductStatus.InReview)
             throw new ConflictException(
-                "Only products ready for publication can be published");
+                "Only products under review can be published");
+
+        var readiness = _readinessService.Evaluate(product);
+
+        if (!readiness.CanPublish)
+            throw new BusinessRuleException(
+                "Product is not ready to publish. All readiness checks must pass.");
 
         product.Status = ProductStatus.Published;
-        product.UpdatedAt = DateTime.UtcNow;
+        product.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);
 
         return ProductMappings.ToResponse(product);
-    }
+}
+    
 
     public async Task<ProductResponse> ArchiveAsync(
         Guid id,

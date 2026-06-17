@@ -16,6 +16,7 @@ public interface IAssetService
     Task<AssetResponse> UploadAsync(
         Guid productId,
         UploadAssetRequest request,
+        Guid userId,
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(
@@ -26,6 +27,7 @@ public interface IAssetService
     // add to IAssetService
     Task<AssetResponse> ApproveAsync(
         Guid productId,
+        Guid userId,
         Guid assetId,
         CancellationToken cancellationToken = default);
 
@@ -33,5 +35,6 @@ public interface IAssetService
         Guid productId,
         Guid assetId,
         RejectAssetRequest request,
+        Guid userId,
         CancellationToken cancellationToken = default);
 }

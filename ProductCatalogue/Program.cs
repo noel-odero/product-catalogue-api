@@ -65,6 +65,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IVariantService, VariantService>();
 builder.Services.AddScoped<IAssetService, AssetService>();
+builder.Services.AddScoped<IReadinessService, ReadinessService>();
 
 // logging
 builder.Logging.ClearProviders();
