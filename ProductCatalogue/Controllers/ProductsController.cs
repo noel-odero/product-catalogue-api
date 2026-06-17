@@ -26,7 +26,7 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id}")]
     public async Task<ActionResult> GetById(
         Guid id,
         CancellationToken cancellationToken)
@@ -44,7 +44,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPatch("{id}")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateProductRequest request,
@@ -54,7 +54,7 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    [HttpPost("{id:guid}/submit-for-review")]
+    [HttpPost("{id}/submit-for-review")]
     public async Task<ActionResult> SubmitForReview(
         Guid id,
         CancellationToken cancellationToken)
@@ -63,7 +63,7 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/publish")]
+    [HttpPost("{id}/publish")]
     public async Task<ActionResult> Publish(
         Guid id,
         CancellationToken cancellationToken)
@@ -72,7 +72,7 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/archive")]
+    [HttpPost("{id}/archive")]
     public async Task<IActionResult> Archive(
         Guid id,
         CancellationToken cancellationToken)
@@ -81,7 +81,7 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
