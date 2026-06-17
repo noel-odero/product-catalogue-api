@@ -19,6 +19,10 @@ using ProductCatalogue.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // controllers with JSOn enum conversion
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -123,6 +127,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// apply any pending EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 // Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -136,7 +147,8 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseCors("AllowFrontend");
