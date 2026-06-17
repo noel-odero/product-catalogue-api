@@ -7,7 +7,7 @@ using ProductCatalogue.Services;
 namespace ProductCatalogue.Controllers;
 
 [ApiController]
-[Route("api/products/{productId:guid}/assets")]
+[Route("api/products/{productId}/assets")]
 [Authorize]
 public class AssetsController : ControllerBase
 {
@@ -63,7 +63,7 @@ public class AssetsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{assetId:guid}/reject")]
+    [HttpPost("{assetId}/reject")]
     public async Task<ActionResult<AssetResponse>> Reject(
         Guid productId,
         Guid assetId,
@@ -75,7 +75,7 @@ public class AssetsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpDelete("{assetId:guid}")]
+    [HttpDelete("{assetId}")]
     public async Task<IActionResult> Delete(
         Guid productId,
         Guid assetId,
