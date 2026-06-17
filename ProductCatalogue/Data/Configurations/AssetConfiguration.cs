@@ -42,7 +42,7 @@ public class AssetConfiguration : IEntityTypeConfiguration<Asset>
         entity.HasOne(a => a.Product)
             .WithMany(p => p.Assets)
             .HasForeignKey(a => a.ProductId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         entity.HasOne(a => a.Variant)
             .WithMany(v => v.Assets)
