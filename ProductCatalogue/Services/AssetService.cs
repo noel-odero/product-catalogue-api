@@ -94,9 +94,7 @@ public class AssetService : IAssetService
 
         var now = DateTimeOffset.UtcNow;
 
-        // assets uploaded while the product is already under review go straight to
-        // PendingReview so a reviewer can act on them; otherwise they wait at Uploaded
-        // until the product is submitted for review.
+        // assets uploaded while the product is already under review go straight to PendingReview
         var initialStatus = product.Status == ProductStatus.InReview
             ? AssetStatus.PendingReview
             : AssetStatus.Uploaded;
