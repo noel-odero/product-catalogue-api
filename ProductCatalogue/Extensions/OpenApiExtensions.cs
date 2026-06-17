@@ -12,6 +12,7 @@ public static class OpenApiExtensions
             // 1. Declare the Bearer scheme once
             options.AddDocumentTransformer((document, context, cancellationToken) =>
             {
+                document.Servers = new List<OpenApiServer> { new() { Url = "/" } };
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
                 document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
