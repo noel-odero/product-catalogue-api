@@ -44,14 +44,14 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    [HttpPut("{id}")]
+    [HttpPatch("{id}")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateProductRequest request,
         CancellationToken cancellationToken)
     {
         var result = await _productService.UpdateAsync(id, request, cancellationToken);
-        return NoContent();
+        return Ok(result);
     }
 
     [HttpPost("{id}/submit-for-review")]

@@ -6,28 +6,28 @@ public class CreateProductRequest
 {
     [Required]
     [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
+    public string Name {get; init;} = string.Empty;
 
     [Required]
     [MaxLength(50)]
-    public string ProductCode { get; set; } = string.Empty;
+    public string ProductCode {get; init;} = string.Empty;
 
     [MaxLength(2000)]
-    public string Description { get; set; } = string.Empty;
+    public string Description {get; init;} = string.Empty;
 
     [Required]
     [MaxLength(100)]
-    public string Brand { get; set; } = string.Empty;
+    public string Brand {get; init;} = string.Empty;
 
     [Required]
     [MaxLength(100)]
-    public string Category { get; set; } = string.Empty;
+    public string Category {get; init;} = string.Empty;
 
     [Required]
     [MaxLength(100)]
-    public string TargetMarket { get; set; } = string.Empty;
+    public string TargetMarket {get; init;} = string.Empty;
 
     [Required]
     [MaxLength(50)]
-    public string Season { get; set; } = string.Empty;
+    public string Season {get; init;} = string.Empty;
 }
