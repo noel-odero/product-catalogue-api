@@ -57,12 +57,8 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 
 
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
-var storageProvider = builder.Configuration["Storage:Provider"];
+builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
 
-if(storageProvider == "Cloudinary")
-    builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
-else
-    builder.Services.AddScoped<IStorageService, LocalStorageService>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -147,8 +143,6 @@ app.MapScalarApiReference(options =>
 app.UseMiddleware<GlobalExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
-app.UseStaticFiles();
-
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

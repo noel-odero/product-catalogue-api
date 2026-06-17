@@ -5,6 +5,7 @@ using ProductCatalogue.DTOs.Products;
 using ProductCatalogue.Exceptions;
 using ProductCatalogue.Mappings;
 using ProductCatalogue.Models;
+using ProductCatalogue.Services.Storage;
 
 namespace ProductCatalogue.Services;
 
@@ -12,12 +13,14 @@ public class ProductService : IProductService
 {
     private readonly AppDbContext _context;
     private readonly IReadinessService _readinessService;
+    private readonly IStorageService _storage;
 
 
-    public ProductService(AppDbContext context, IReadinessService readinessService)
+    public ProductService(AppDbContext context, IReadinessService readinessService, IStorageService storage)
     {
         _context = context;
         _readinessService = readinessService;
+        _storage = storage;
     }
 
     public async Task<ProductListResponse> GetAllAsync(
@@ -48,15 +51,19 @@ public class ProductService : IProductService
     }
 
     public async Task<ProductDetailResponse?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
+    Guid id,
+    CancellationToken cancellationToken = default)
     {
-        return await _context.Products
+        var product = await _context.Products
             .AsNoTracking()
-            .Where(p => p.Id == id)
-            .Select(ProductMappings.ToDetailResponseExpression())
-            .FirstOrDefaultAsync(cancellationToken)
+            .Include(p => p.Variants)
+            .Include(p => p.Assets).ThenInclude(a => a.Tags)
+            .Include(p => p.Assets).ThenInclude(a => a.StatusHistory)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"Product with id '{id}' not found");
+
+        return ProductMappings.ToDetailResponse(product, _storage);
     }
 
     public async Task<ProductResponse> CreateAsync(
