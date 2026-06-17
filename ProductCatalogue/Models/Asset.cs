@@ -14,6 +14,7 @@ public class Asset
     public AssetStatus Status { get; set; } = AssetStatus.Uploaded;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string ResourceType { get; set; } = "image";
     public List<AssetTag> Tags { get; set; } = new();
     public string? RejectionReason { get; set; }
     public Guid UploadedBy { get; set; }

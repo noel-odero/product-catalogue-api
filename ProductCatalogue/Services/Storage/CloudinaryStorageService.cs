@@ -39,21 +39,27 @@ public class CloudinaryStorageService : IStorageService
             FileName: result.PublicId,
             OriginalFileName: file.FileName,
             ContentType: file.ContentType,
-            FileSize: file.Length
+            FileSize: file.Length,
+            ResourceType: result.ResourceType ?? "image"
         );
     }
 
     public async Task DeleteAsync(
-        string storagePath,
-        CancellationToken cancellationToken = default)
+    StoredFile file,
+    CancellationToken cancellationToken = default)
     {
-        // storagePath is the Cloudinary public id
-        var deleteParams = new DeletionParams(storagePath)
+        var resourceType = file.ResourceType == "raw"
+            ? ResourceType.Raw
+            : ResourceType.Image;
+
+        var deleteParams = new DeletionParams(file.StoragePath)
         {
-            ResourceType = ResourceType.Image,
+            ResourceType = resourceType,
         };
 
-        await _cloudinary.DestroyAsync(deleteParams);
+        var result = await _cloudinary.DestroyAsync(deleteParams);
+        if (result.Error is not null)
+            throw new InvalidOperationException($"Cloudinary delete failed: {result.Error.Message}");
     }
 
     public string GetFileUrl(string fileName)

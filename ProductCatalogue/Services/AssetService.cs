@@ -13,7 +13,7 @@ public class AssetService : IAssetService
     private readonly AppDbContext _context;
     private readonly IStorageService _storage;
 
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
 
     private static readonly HashSet<string> AllowedContentTypes = new()
     {
@@ -112,6 +112,7 @@ public class AssetService : IAssetService
             ContentType = stored.ContentType,
             FileSize = stored.FileSize,
             StoragePath = stored.StoragePath,
+            ResourceType = stored.ResourceType,
             UploadedBy = userId,
             UploadedAt = now,
             Tags = request.Tags
@@ -155,8 +156,16 @@ public class AssetService : IAssetService
             ?? throw new NotFoundException(
                 $"Asset with id '{assetId}' not found for this product");
 
+        var storedFile = new StoredFile(
+        StoragePath: asset.StoragePath,
+        FileName: asset.FileName,
+        OriginalFileName: asset.OriginalFileName,
+        ContentType: asset.ContentType,
+        FileSize: asset.FileSize,
+        ResourceType: asset.ResourceType);
+
         // remove the stored file first, then the record
-        await _storage.DeleteAsync(asset.StoragePath, cancellationToken);
+        await _storage.DeleteAsync(storedFile, cancellationToken);
 
         _context.Assets.Remove(asset);
         await _context.SaveChangesAsync(cancellationToken);

@@ -5,7 +5,8 @@ public record StoredFile(
     string FileName,
     string OriginalFileName,
     string ContentType,
-    long FileSize);
+    long FileSize,
+    string ResourceType);
 
 public interface IStorageService
 {
@@ -14,7 +15,7 @@ public interface IStorageService
         CancellationToken cancellationToken = default);
 
     Task DeleteAsync(
-        string storagePath,
+        StoredFile file,
         CancellationToken cancellationToken = default);
 
     string GetFileUrl(string fileName);
