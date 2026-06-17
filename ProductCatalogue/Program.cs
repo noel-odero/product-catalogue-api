@@ -77,8 +77,8 @@ builder.Logging.AddConsole();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secret = jwtSettings["Secret"]
-    ?? throw new InvalidOperationException("JWT Secret is missing");
+var secret = jwtSettings["Secret"];
+
 if (string.IsNullOrWhiteSpace(secret))
     throw new InvalidOperationException("JWT secret is missing");
 
