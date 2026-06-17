@@ -27,8 +27,8 @@ public interface IAssetService
     // add to IAssetService
     Task<AssetResponse> ApproveAsync(
         Guid productId,
-        Guid userId,
         Guid assetId,
+        Guid userId,
         CancellationToken cancellationToken = default);
 
     Task<AssetResponse> RejectAsync(
