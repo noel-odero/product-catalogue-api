@@ -245,7 +245,6 @@ public class AssetService : IAssetService
 
     private static void GuardProductAllowsAssetChanges(Product product)
     {
-        // lenient: assets can be added/removed while Draft or InReview
         if (product.Status is not (ProductStatus.Draft or ProductStatus.InReview))
             throw new ConflictException(
                 "Assets can only be modified while the product is in draft or under review");

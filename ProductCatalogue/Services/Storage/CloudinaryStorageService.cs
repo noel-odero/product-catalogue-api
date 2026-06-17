@@ -20,7 +20,6 @@ public class CloudinaryStorageService : IStorageService
     {
         await using var stream = file.OpenReadStream();
 
-        // auto detect image vs raw
         var uploadParams = new AutoUploadParams
         {
             File = new FileDescription(file.FileName, stream),
@@ -64,7 +63,6 @@ public class CloudinaryStorageService : IStorageService
 
     public string GetFileUrl(string fileName)
     {
-        // fileName is the public id
         return _cloudinary.Api.UrlImgUp.BuildUrl(fileName);
     }
 }
