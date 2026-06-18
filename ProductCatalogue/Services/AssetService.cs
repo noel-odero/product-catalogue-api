@@ -39,6 +39,7 @@ public class AssetService : IAssetService
             .AsNoTracking()
             .Include(a => a.Tags)
             .Include(a => a.StatusHistory)
+            .AsSplitQuery()
             .Where(a => a.ProductId == productId)
             .OrderByDescending(a => a.UploadedAt)
             .ToListAsync(cancellationToken);
@@ -55,6 +56,7 @@ public class AssetService : IAssetService
             .AsNoTracking()
             .Include(a => a.Tags)
             .Include(a => a.StatusHistory)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(
                 a => a.Id == assetId && a.ProductId == productId,
                 cancellationToken)
