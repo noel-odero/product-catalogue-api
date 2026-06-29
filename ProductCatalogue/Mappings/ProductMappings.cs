@@ -3,6 +3,7 @@ using ProductCatalogue.DTOs.Assets;
 using ProductCatalogue.DTOs.Products;
 using ProductCatalogue.DTOs.Variants;
 using ProductCatalogue.Models;
+using ProductCatalogue.Services.Storage;
 
 namespace ProductCatalogue.Mappings;
 
@@ -60,7 +61,7 @@ public static class ProductMappings
                 Status = a.Status,
                 Title = a.Title,
                 Description = a.Description,
-                Tags = a.Tags,
+                Tags = a.Tags.Select(t => t.Tag).ToList(),
                 FileName = a.FileName,
                 FileUrl = "/uploads/" + a.FileName,
                 RejectionReason = a.RejectionReason,
@@ -74,8 +75,22 @@ public static class ProductMappings
                 }).ToList(),
             }).ToList(),
         };
-
-    // plain version — for already-materialized entities (create, update, transitions)
+    public static ProductDetailResponse ToDetailResponse(Product p, IStorageService storage) => new()
+    {
+        Id = p.Id,
+        Name = p.Name,
+        ProductCode = p.ProductCode,
+        Description = p.Description,
+        Brand = p.Brand,
+        Category = p.Category,
+        TargetMarket = p.TargetMarket,
+        Season = p.Season,
+        Status = p.Status,
+        CreatedAt = p.CreatedAt,
+        UpdatedAt = p.UpdatedAt,
+        Variants = p.Variants.Select(VariantMappings.ToResponse).ToList(),
+        Assets = p.Assets.Select(a => AssetMappings.ToResponse(a, storage)).ToList(),
+    };
     public static ProductResponse ToResponse(Product p) => new()
     {
         Id = p.Id,

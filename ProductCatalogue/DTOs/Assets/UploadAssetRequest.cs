@@ -8,9 +8,6 @@ public class UploadAssetRequest
     [Required]
     public IFormFile File { get; set; } = null!;
 
-    [Required]
-    public Guid ProductId { get; set; }
-
     public Guid? VariantId { get; set; }
 
     [Required]

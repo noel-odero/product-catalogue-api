@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProductCatalogue.Data;
@@ -11,9 +12,11 @@ using ProductCatalogue.Data;
 namespace ProductCatalogue.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615143240_NormalizeAssetTags")]
+    partial class NormalizeAssetTags
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -189,10 +192,6 @@ namespace ProductCatalogue.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("RejectionReason")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ResourceType")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Status")
@@ -527,7 +526,7 @@ namespace ProductCatalogue.Migrations
                     b.HasOne("ProductCatalogue.Models.Product", "Product")
                         .WithMany("Assets")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ProductCatalogue.Models.Variant", "Variant")

@@ -39,13 +39,10 @@ public class AssetConfiguration : IEntityTypeConfiguration<Asset>
         entity.Property(a => a.Status)
             .HasConversion<string>();
 
-        entity.Property(a => a.Tags)
-            .HasColumnType("text[]");
-
         entity.HasOne(a => a.Product)
             .WithMany(p => p.Assets)
             .HasForeignKey(a => a.ProductId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         entity.HasOne(a => a.Variant)
             .WithMany(v => v.Assets)

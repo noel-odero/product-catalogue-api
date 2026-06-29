@@ -1,5 +1,3 @@
-using Microsoft.VisualBasic;
-
 namespace ProductCatalogue.Models;
 
 public class Product

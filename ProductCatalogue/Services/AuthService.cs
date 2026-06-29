@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using ProductCatalogue.DTOs.Auth;
+using ProductCatalogue.Exceptions;
 using ProductCatalogue.Models;
 namespace ProductCatalogue.Services;
 
@@ -24,7 +25,7 @@ public class AuthService : IAuthService
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
-            throw new InvalidOperationException("Email is already registered");
+            throw new ConflictException("Email is already registered");
 
         var user = new User
         {
@@ -39,7 +40,7 @@ public class AuthService : IAuthService
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException(errors);
+            throw new ValidationException(errors);
         }
 
         return await GenerateAuthResponse(user);

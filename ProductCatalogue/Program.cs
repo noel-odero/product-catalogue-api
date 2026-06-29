@@ -12,9 +12,16 @@ using ProductCatalogue.Services;
 using Scalar.AspNetCore;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Authorization;
+using ProductCatalogue.Settings;
+using ProductCatalogue.Services.Storage;
+using ProductCatalogue.Extensions;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(port))
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // controllers with JSOn enum conversion
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -48,9 +55,17 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 .AddEntityFrameworkStores<AppDbContext>() 
 .AddDefaultTokenProviders();
 
+
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
+builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
+
+
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IVariantService, VariantService>();
+builder.Services.AddScoped<IAssetService, AssetService>();
+builder.Services.AddScoped<IReadinessService, ReadinessService>();
 
 // logging
 builder.Logging.ClearProviders();
@@ -58,8 +73,8 @@ builder.Logging.AddConsole();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secret = jwtSettings["Secret"]
-    ?? throw new InvalidOperationException("JWT Secret is missing");
+var secret = jwtSettings["Secret"];
+
 if (string.IsNullOrWhiteSpace(secret))
     throw new InvalidOperationException("JWT secret is missing");
 
@@ -87,44 +102,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
-
-builder.Services.AddOpenApi(options =>
-{
-    // Declare the scheme
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-        };
-        return Task.CompletedTask;
-    });
-
-    //  only to endpoints that actually require auth
-    options.AddOperationTransformer((operation, context, cancellationToken) =>
-    {
-        var requiresAuth = context.Description.ActionDescriptor.EndpointMetadata
-            .OfType<IAuthorizeData>().Any()
-            && !context.Description.ActionDescriptor.EndpointMetadata
-                .OfType<IAllowAnonymous>().Any();
-
-        if (requiresAuth)
-        {
-            operation.Security ??= new List<OpenApiSecurityRequirement>();
-            operation.Security.Add(new OpenApiSecurityRequirement
-            {
-                [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = new List<string>()
-            });
-        }
-
-        return Task.CompletedTask;
-    });
-});
+builder.Services.AddOpenApiWithAuth();
 
 
 // CORS
@@ -145,21 +123,26 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Middleware pipeline
-if (app.Environment.IsDevelopment())
+// apply any pending EF Core migrations on startup
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(options =>
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
+// Middleware pipeline
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
     {
         options.Title = "Product Catalogue API";
         options.Theme = ScalarTheme.DeepSpace;
-    });
-}
+    });    
+
 
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseHttpsRedirection();
-
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

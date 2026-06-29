@@ -22,14 +22,3 @@ public class ProductDetailResponse
     public ReadinessResponse? Readiness { get; init; }
 }
 
-public class ReadinessResponse
-{
-    public bool HasRequiredInfo { get; init; }
-    public bool HasMainImage { get; init; }
-    public bool AllVariantsHaveImages { get; init; }
-    public bool NoRejectedAssets { get; init; }
-    public bool AllRequiredAssetsApproved { get; init; }
-    public bool CanPublish { get; init; }
-    public int PassedCount { get; init; }
-    public int TotalCount { get; init; }
-}

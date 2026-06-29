@@ -18,7 +18,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll(
+    public async Task<ActionResult> GetAll(
         [FromQuery] ProductQueryParams query,
         CancellationToken cancellationToken)
     {
@@ -26,8 +26,8 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(
+    [HttpGet("{id}")]
+    public async Task<ActionResult> GetById(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -36,7 +36,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create(
+    public async Task<ActionResult> Create(
         [FromBody] CreateProductRequest request,
         CancellationToken cancellationToken)
     {
@@ -44,7 +44,7 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPatch("{id}")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateProductRequest request,
@@ -54,8 +54,8 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/submit-for-review")]
-    public async Task<IActionResult> SubmitForReview(
+    [HttpPost("{id}/submit-for-review")]
+    public async Task<ActionResult> SubmitForReview(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -63,8 +63,8 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/publish")]
-    public async Task<IActionResult> Publish(
+    [HttpPost("{id}/publish")]
+    public async Task<ActionResult> Publish(
         Guid id,
         CancellationToken cancellationToken)
     {
@@ -72,16 +72,16 @@ public class ProductsController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{id:guid}/archive")]
+    [HttpPost("{id}/archive")]
     public async Task<IActionResult> Archive(
         Guid id,
         CancellationToken cancellationToken)
     {
         var result = await _productService.ArchiveAsync(id, cancellationToken);
-        return Ok(result);
+        return NoContent();
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
