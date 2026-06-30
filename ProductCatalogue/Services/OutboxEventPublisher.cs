@@ -1,6 +1,6 @@
 using System.Text.Json;
 using ProductCatalogue.Data;
-using ProductCatalogue.Events;
+using ProductCatalogue.Contracts;
 using ProductCatalogue.Models;
 
 namespace ProductCatalogue.Services;

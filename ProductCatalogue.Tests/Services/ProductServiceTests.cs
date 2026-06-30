@@ -1,9 +1,14 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using ProductCatalogue.Contracts;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Products;
 using ProductCatalogue.Exceptions;
 using ProductCatalogue.Models;
 using ProductCatalogue.Services;
+using ProductCatalogue.Services.Storage;
+using ProductCatalogue.Infrastructure.Kafka;
 
 namespace ProductCatalogue.Tests.Services;
 
@@ -11,6 +16,7 @@ public class ProductServiceTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly ProductService _service;
+    private readonly FakeEventPublisher _events = new();
 
     public ProductServiceTests()
     {
@@ -19,10 +25,51 @@ public class ProductServiceTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _service = new ProductService(_context);
+
+        var kafkaOptions = Options.Create(new KafkaSettings
+        {
+            BootstrapServers = "localhost:9092",
+            AssetEventsTopic = "test.asset-events",
+            ProductEventsTopic = "test.product-events",
+        });
+
+        _service = new ProductService(
+            _context,
+            new ReadinessService(_context),
+            new FakeStorageService(),
+            _events,
+            kafkaOptions);
     }
 
     public void Dispose() => _context.Dispose();
+
+    // fakes
+
+    private class FakeEventPublisher : IEventPublisher
+    {
+        public List<(string EventType, object Payload)> Enqueued { get; } = new();
+
+        public void Enqueue<TPayload>(string topic, string key, string eventType, TPayload payload)
+            => Enqueued.Add((eventType, payload!));
+    }
+
+    private class FakeStorageService : IStorageService
+    {
+        public Task<StoredFile> SaveAsync(IFormFile file, CancellationToken ct = default)
+            => Task.FromResult(new StoredFile(
+                StoragePath: "fake/path",
+                FileName: "fake.jpg",
+                OriginalFileName: file.FileName,
+                ContentType: file.ContentType,
+                FileSize: file.Length,
+                ResourceType: "image"));
+
+        public Task DeleteAsync(StoredFile file, CancellationToken ct = default)
+            => Task.CompletedTask;
+
+        public string GetFileUrl(string fileName)
+            => $"https://fake/{fileName}";
+    }
 
     // seeding helpers
 
@@ -180,21 +227,57 @@ public class ProductServiceTests : IDisposable
     // PublishAsync
 
     [Fact]
-    public async Task PublishAsync_WhenReady_Succeeds()
+    public async Task PublishAsync_WhenInReviewAndReady_Succeeds()
     {
-        var product = await SeedProductAsync(status: ProductStatus.ReadyToPublish);
+        // InReview product with an approved main image and no active variants → ready
+        var product = new Product
+        {
+            Name = "Merino Wool Coat",
+            ProductCode = "PUB-001",
+            Description = "A premium merino wool coat",
+            Brand = "Heritage",
+            Category = "Outerwear",
+            TargetMarket = "Women",
+            Season = "AW24",
+            Status = ProductStatus.InReview,
+        };
+        product.Assets.Add(new Asset
+        {
+            AssetType = AssetType.MainImage,
+            Status = AssetStatus.Approved,
+            Title = "Hero",
+            OriginalFileName = "hero.jpg",
+            FileName = "hero-001.jpg",
+            ContentType = "image/jpeg",
+            FileSize = 1024,
+            StoragePath = "uploads/hero-001.jpg",
+            UploadedBy = Guid.NewGuid(),
+        });
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync();
 
         var result = await _service.PublishAsync(product.Id);
 
         Assert.Equal(ProductStatus.Published, result.Status);
     }
 
+    [Fact]
+    public async Task PublishAsync_WhenInReviewButNotReady_ThrowsBusinessRule()
+    {
+        // seeded asset is PendingReview → main-image and review-complete checks fail
+        var product = await SeedProductAsync(
+            status: ProductStatus.InReview, withVariant: true, withAsset: true);
+
+        await Assert.ThrowsAsync<BusinessRuleException>(
+            () => _service.PublishAsync(product.Id));
+    }
+
     [Theory]
     [InlineData(ProductStatus.Draft)]
-    [InlineData(ProductStatus.InReview)]
+    [InlineData(ProductStatus.ReadyToPublish)]
     [InlineData(ProductStatus.Published)]
     [InlineData(ProductStatus.Archived)]
-    public async Task PublishAsync_WhenNotReady_ThrowsConflict(ProductStatus status)
+    public async Task PublishAsync_WhenNotInReview_ThrowsConflict(ProductStatus status)
     {
         var product = await SeedProductAsync(status: status);
 
