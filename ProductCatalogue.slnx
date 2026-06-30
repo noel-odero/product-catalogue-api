@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="ProductCatalogue.Consumer/ProductCatalogue.Consumer.csproj" />
   <Project Path="ProductCatalogue.Contracts/ProductCatalogue.Contracts.csproj" />
   <Project Path="ProductCatalogue.Tests/ProductCatalogue.Tests.csproj" />
   <Project Path="ProductCatalogue/ProductCatalogue.csproj" />
