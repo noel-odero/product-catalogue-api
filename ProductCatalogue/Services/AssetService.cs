@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Assets;
+using ProductCatalogue.Events;
 using ProductCatalogue.Exceptions;
+using ProductCatalogue.Infrastructure.Kafka;
 using ProductCatalogue.Mappings;
 using ProductCatalogue.Models;
 using ProductCatalogue.Services.Storage;
@@ -12,6 +15,9 @@ public class AssetService : IAssetService
 {
     private readonly AppDbContext _context;
     private readonly IStorageService _storage;
+    private readonly IEventPublisher _eventPublisher;
+    private readonly KafkaSettings _kafka;
+
 
     private const long MaxFileSizeBytes = 10 * 1024 * 1024;
 
@@ -23,10 +29,12 @@ public class AssetService : IAssetService
         "application/pdf",
     };
 
-    public AssetService(AppDbContext context, IStorageService storage)
+    public AssetService(AppDbContext context, IStorageService storage, IEventPublisher eventPublisher,  IOptions<KafkaSettings> kafka)
     {
         _context = context;
         _storage = storage;
+        _eventPublisher = eventPublisher;
+        _kafka = kafka.Value;
     }
 
     public async Task<List<AssetResponse>> GetByProductAsync(
@@ -137,6 +145,19 @@ public class AssetService : IAssetService
         };
 
         _context.Assets.Add(asset);
+        _eventPublisher.Enqueue(
+            topic: _kafka.AssetEventsTopic,
+            key: productId.ToString(),
+            eventType: EventTypes.AssetUploaded,
+            payload: new AssetUploadedPayload(
+                AssetId: asset.Id,
+                ProductId: productId,
+                VariantId: asset.VariantId,
+                AssetType: asset.AssetType.ToString(),
+                Title: asset.Title,
+                UploadedBy: userId,
+                UploadedAt: now)
+        );
         await _context.SaveChangesAsync(cancellationToken);
 
         return AssetMappings.ToResponse(asset, _storage);
@@ -190,6 +211,16 @@ public class AssetService : IAssetService
             "Asset approved",
             null,
             userId);
+        _eventPublisher.Enqueue(
+            topic: _kafka.AssetEventsTopic,
+            key: productId.ToString(),
+            eventType: EventTypes.AssetApproved,
+            payload: new AssetApprovedPayload(
+                AssetId: asset.Id,
+                ProductId: productId,
+                AssetType: asset.AssetType.ToString(),
+                ApprovedBy: userId,
+                ApprovedAt: DateTimeOffset.UtcNow));
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -219,10 +250,25 @@ public class AssetService : IAssetService
             rejectionReason: request.Reason,
             userId);
 
+        _eventPublisher.Enqueue(
+            topic: _kafka.AssetEventsTopic,
+            key: productId.ToString(),
+            eventType: EventTypes.AssetRejected,
+            payload: new AssetRejectedPayload(
+                AssetId: asset.Id,
+                ProductId: productId,
+                AssetType: asset.AssetType.ToString(),
+                Reason: request.Reason,
+                RejectedBy: userId,
+                RejectedAt: DateTimeOffset.UtcNow));
+
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return AssetMappings.ToResponse(asset, _storage);
     }
+
+
     // private helpers
 
     private async Task<Product> GetProductOrThrow(
