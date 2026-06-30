@@ -1,5 +1,4 @@
-namespace ProductCatalogue.Events;
-
+namespace ProductCatalogue.Contracts;
 public static class EventTypes
 {
     public const string AssetUploaded = "AssetUploaded";

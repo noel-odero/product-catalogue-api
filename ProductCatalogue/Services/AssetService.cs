@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Assets;
-using ProductCatalogue.Events;
+using ProductCatalogue.Contracts;
 using ProductCatalogue.Exceptions;
 using ProductCatalogue.Infrastructure.Kafka;
 using ProductCatalogue.Mappings;

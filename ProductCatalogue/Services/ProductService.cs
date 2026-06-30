@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Npgsql;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Products;
-using ProductCatalogue.Events;
+using ProductCatalogue.Contracts;
 using ProductCatalogue.Exceptions;
 using ProductCatalogue.Infrastructure.Kafka;
 using ProductCatalogue.Mappings;

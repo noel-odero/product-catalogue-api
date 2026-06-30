@@ -1,5 +1,4 @@
-namespace ProductCatalogue.Events;
-
+namespace ProductCatalogue.Contracts;
 public record AssetUploadedPayload(
     Guid AssetId,
     Guid ProductId,

@@ -1,5 +1,4 @@
-namespace ProductCatalogue.Events;
-
+namespace ProductCatalogue.Contracts;
 public class EventEnvelope<TPayload>
 {
     public Guid EventId { get; init; } = Guid.NewGuid();
