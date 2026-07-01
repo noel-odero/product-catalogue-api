@@ -12,6 +12,13 @@ builder.Services.Configure<KafkaConsumerSettings>(
 builder.Services.AddDbContext<NotificationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.BackgroundServiceExceptionBehavior =
+        BackgroundServiceExceptionBehavior.Ignore;
+});
+
 builder.Services.AddHostedService<NotificationConsumerService>();
 
 var host = builder.Build();
