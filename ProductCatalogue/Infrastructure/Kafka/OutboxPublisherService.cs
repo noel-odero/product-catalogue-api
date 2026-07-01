@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProductCatalogue.Data;
+using ProductCatalogue.Models;
 
 namespace ProductCatalogue.Infrastructure.Kafka;
 
@@ -11,6 +12,7 @@ public class OutboxPublisherService : BackgroundService
 
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
     private const int BatchSize = 20;
+    private const int MaxAttempts = 5;
 
     public OutboxPublisherService(
         IServiceScopeFactory scopeFactory,
@@ -40,15 +42,12 @@ public class OutboxPublisherService : BackgroundService
     }
 
     private async Task DrainOnce(CancellationToken ct)
-
     {
-        // Handle Captive Dependency problem
-        
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var pending = await context.OutboxMessages
-            .Where(m => !m.Published)
+            .Where(m => m.Status == OutboxStatus.Pending)
             .OrderBy(m => m.OccurredAt)
             .Take(BatchSize)
             .ToListAsync(ct);
@@ -62,16 +61,28 @@ public class OutboxPublisherService : BackgroundService
             {
                 await _producer.ProduceAsync(message.Topic, message.Key, message.Payload, ct);
 
-                message.Published = true;
+                message.Status = OutboxStatus.Published;
                 message.PublishedAt = DateTimeOffset.UtcNow;
                 message.Attempts++;
             }
             catch (Exception ex)
             {
                 message.Attempts++;
-                _logger.LogWarning(ex,
-                    "Failed to publish outbox message {Id} (attempt {Attempts})",
-                    message.Id, message.Attempts);
+
+                if (message.Attempts >= MaxAttempts)
+                {
+                    message.Status = OutboxStatus.Failed;
+                    _logger.LogError(ex,
+                        "Outbox message {Id} PARKED after {Attempts} failed attempts. " +
+                        "Event {EventType} will not be retried and needs manual attention.",
+                        message.Id, message.Attempts, message.EventType);
+                }
+                else
+                {
+                    _logger.LogWarning(ex,
+                        "Failed to publish outbox message {Id} (attempt {Attempts}/{Max})",
+                        message.Id, message.Attempts, MaxAttempts);
+                }
             }
         }
 

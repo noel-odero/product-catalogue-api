@@ -65,9 +65,18 @@ public class NotificationConsumerService : BackgroundService
                 if (result?.Message is null)
                     continue;
 
-                await HandleMessage(result.Message.Value, stoppingToken);
+                try
+                {
+                    await HandleMessage(result.Message.Value, stoppingToken);
 
-                consumer.Commit(result);
+                    consumer.Commit(result);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "Failed to process message at offset {Offset}, will retry",
+                        result.Offset);
+                }
             }
         }
         catch (OperationCanceledException){}
@@ -96,16 +105,21 @@ public class NotificationConsumerService : BackgroundService
 
         if (envelope.EventType is not ("AssetApproved" or "AssetRejected"))
             return;
-
-        Guid assetId, productId;
+        AssetEventFields? fields;
         try
         {
-            assetId = envelope.Payload.GetProperty("assetId").GetGuid();
-            productId = envelope.Payload.GetProperty("productId").GetGuid();
+            fields = JsonSerializer.Deserialize<AssetEventFields>(
+                envelope.Payload.GetRawText(), JsonOptions);
         }
-        catch (Exception ex)
+        catch (JsonException ex)
         {
-            _logger.LogWarning(ex, "Message missing expected fields, skipping");
+            _logger.LogWarning(ex, "Skipping message with unreadable payload");
+            return;
+        }
+
+        if (fields is null || fields.AssetId == Guid.Empty || fields.ProductId == Guid.Empty)
+        {
+            _logger.LogWarning("Message payload missing required fields, skipping");
             return;
         }
 
@@ -117,8 +131,7 @@ public class NotificationConsumerService : BackgroundService
 
         if (alreadyLogged)
         {
-            _logger.LogInformation(
-                "Duplicate event {EventId} ignored", envelope.EventId);
+            _logger.LogInformation("Duplicate event {EventId} ignored", envelope.EventId);
             return;
         }
 
@@ -126,8 +139,8 @@ public class NotificationConsumerService : BackgroundService
         {
             EventId = envelope.EventId,
             EventType = envelope.EventType,
-            AssetId = assetId,
-            ProductId = productId,
+            AssetId = fields.AssetId,
+            ProductId = fields.ProductId,
             CreatedAt = DateTimeOffset.UtcNow,
         });
 
@@ -136,7 +149,7 @@ public class NotificationConsumerService : BackgroundService
             await db.SaveChangesAsync(ct);
             _logger.LogInformation(
                 "Logged {EventType} for asset {AssetId}",
-                envelope.EventType, assetId);
+                envelope.EventType, fields.AssetId);
         }
         catch (DbUpdateException)
         {
@@ -144,4 +157,5 @@ public class NotificationConsumerService : BackgroundService
                 "Duplicate event {EventId} ignored (unique constraint)", envelope.EventId);
         }
     }
+    private sealed record AssetEventFields(Guid AssetId, Guid ProductId);
 }

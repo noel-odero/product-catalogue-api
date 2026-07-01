@@ -13,6 +13,7 @@ public class OutboxMessageConfiguration : IEntityTypeConfiguration<OutboxMessage
         builder.Property(o => o.Key).IsRequired().HasMaxLength(200);
         builder.Property(o => o.Payload).IsRequired();
         builder.Property(o => o.EventType).IsRequired().HasMaxLength(100);
-        builder.HasIndex(o => new { o.Published, o.OccurredAt });
+        builder.Property(o => o.Status).HasConversion<string>();
+        builder.HasIndex(o => new { o.Status, o.OccurredAt });
     }
 }

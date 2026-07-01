@@ -11,9 +11,9 @@ public class OutboxMessage
     public string Payload { get; set; } = string.Empty;
 
     public string EventType { get; set; } = string.Empty;
+    public OutboxStatus Status { get; set; } = OutboxStatus.Pending;
 
     public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
-    public bool Published { get; set; } = false;
     public DateTimeOffset? PublishedAt { get; set; }
     public int Attempts { get; set; } = 0;
 }
