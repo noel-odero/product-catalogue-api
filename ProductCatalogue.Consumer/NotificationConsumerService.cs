@@ -15,6 +15,8 @@ public class NotificationConsumerService : BackgroundService
     private readonly KafkaConsumerSettings _settings;
     private readonly ILogger<NotificationConsumerService> _logger;
 
+    private const int MaxProcessingAttempts = 5;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -47,6 +49,9 @@ public class NotificationConsumerService : BackgroundService
             "Consumer subscribed to {Topic} as group {Group}",
             _settings.AssetEventsTopic, _settings.GroupId);
 
+        var currentKey = (TopicPartitionOffset?)null;
+        var attempts = 0;
+
         try
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -70,20 +75,56 @@ public class NotificationConsumerService : BackgroundService
                     await HandleMessage(result.Message.Value, stoppingToken);
 
                     consumer.Commit(result);
+                    currentKey = null;
+                    attempts = 0;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex,
-                        "Failed to process message at offset {Offset}, will retry",
-                        result.Offset);
+                    if (currentKey != result.TopicPartitionOffset)
+                    {
+                        currentKey = result.TopicPartitionOffset;
+                        attempts = 1;
+                    }
+                    else
+                    {
+                        attempts++;
+                    }
+
+                    if (attempts >= MaxProcessingAttempts)
+                    {
+                        _logger.LogCritical(ex,
+                            "Message at {Offset} failed {Attempts} times and is being " +
+                            "SKIPPED to unblock the partition. It will not be reprocessed.",
+                            result.TopicPartitionOffset, attempts);
+
+                        consumer.Commit(result);
+                        currentKey = null;
+                        attempts = 0;
+                    }
+                    else
+                    {
+                        var delay = TimeSpan.FromSeconds(Math.Min(attempts * 2, 30));
+
+                        _logger.LogWarning(ex,
+                            "Failed to process message at {Offset} (attempt {Attempts}/{Max}), " +
+                            "backing off {Delay}s",
+                            result.TopicPartitionOffset, attempts, MaxProcessingAttempts,
+                            delay.TotalSeconds);
+
+                        await Task.Delay(delay, stoppingToken);
+
+                        consumer.Seek(result.TopicPartitionOffset);
+                    }
                 }
             }
         }
-        catch (OperationCanceledException){}
+        catch (OperationCanceledException)
+        {
+        }
         finally
         {
             consumer.Close();
-            _logger.LogInformation("Consumer closed");
+            _logger.LogInformation("Consumer closed cleanly");
         }
     }
 
@@ -105,6 +146,7 @@ public class NotificationConsumerService : BackgroundService
 
         if (envelope.EventType is not ("AssetApproved" or "AssetRejected"))
             return;
+
         AssetEventFields? fields;
         try
         {
@@ -157,5 +199,6 @@ public class NotificationConsumerService : BackgroundService
                 "Duplicate event {EventId} ignored (unique constraint)", envelope.EventId);
         }
     }
+
     private sealed record AssetEventFields(Guid AssetId, Guid ProductId);
 }
