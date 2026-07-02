@@ -13,7 +13,7 @@ public class NotificationDbContext : DbContext
     {
         modelBuilder.Entity<NotificationLog>(b =>
         {
-            b.ToTable("NotificationLogs");   // match the API's table name exactly
+            b.ToTable("NotificationLogs");
             b.HasKey(n => n.Id);
             b.HasIndex(n => n.EventId).IsUnique();
         });
