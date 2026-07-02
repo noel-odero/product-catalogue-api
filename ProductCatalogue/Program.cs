@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Authorization;
 using ProductCatalogue.Settings;
 using ProductCatalogue.Services.Storage;
 using ProductCatalogue.Extensions;
+using Confluent.Kafka;
+using ProductCatalogue.Infrastructure.Kafka;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,6 +60,12 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
 
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
 builder.Services.AddScoped<IStorageService, CloudinaryStorageService>();
+
+
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+builder.Services.AddSingleton<IKafkaProducer, KafkaProducer>();
+builder.Services.AddScoped<IEventPublisher, OutboxEventPublisher>();
+builder.Services.AddHostedService<OutboxPublisherService>();
 
 
 // Services

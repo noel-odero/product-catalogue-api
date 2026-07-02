@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProductCatalogue.Data;
@@ -11,9 +12,11 @@ using ProductCatalogue.Data;
 namespace ProductCatalogue.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630093752_AddNotificationLog")]
+    partial class AddNotificationLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -340,12 +343,11 @@ namespace ProductCatalogue.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Published")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset?>("PublishedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("Topic")
                         .IsRequired()
@@ -354,7 +356,7 @@ namespace ProductCatalogue.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Status", "OccurredAt");
+                    b.HasIndex("Published", "OccurredAt");
 
                     b.ToTable("OutboxMessages");
                 });

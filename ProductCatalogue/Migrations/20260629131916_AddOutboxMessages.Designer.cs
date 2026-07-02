@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProductCatalogue.Data;
@@ -11,9 +12,11 @@ using ProductCatalogue.Data;
 namespace ProductCatalogue.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260629131916_AddOutboxMessages")]
+    partial class AddOutboxMessages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -283,37 +286,6 @@ namespace ProductCatalogue.Migrations
                     b.ToTable("AssetTags");
                 });
 
-            modelBuilder.Entity("ProductCatalogue.Models.NotificationLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AssetId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EventId")
-                        .IsUnique();
-
-                    b.ToTable("NotificationLogs");
-                });
-
             modelBuilder.Entity("ProductCatalogue.Models.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -340,12 +312,11 @@ namespace ProductCatalogue.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Published")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset?>("PublishedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("Topic")
                         .IsRequired()
@@ -354,7 +325,7 @@ namespace ProductCatalogue.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Status", "OccurredAt");
+                    b.HasIndex("Published", "OccurredAt");
 
                     b.ToTable("OutboxMessages");
                 });

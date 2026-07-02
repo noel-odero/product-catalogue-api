@@ -1,11 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using ProductCatalogue.Data;
 using ProductCatalogue.DTOs.Products;
+using ProductCatalogue.Contracts;
 using ProductCatalogue.Exceptions;
+using ProductCatalogue.Infrastructure.Kafka;
 using ProductCatalogue.Mappings;
 using ProductCatalogue.Models;
 using ProductCatalogue.Services.Storage;
+
 
 namespace ProductCatalogue.Services;
 
@@ -14,13 +18,18 @@ public class ProductService : IProductService
     private readonly AppDbContext _context;
     private readonly IReadinessService _readinessService;
     private readonly IStorageService _storage;
+    private readonly IEventPublisher _eventPublisher;
+    private readonly KafkaSettings _kafka;
 
 
-    public ProductService(AppDbContext context, IReadinessService readinessService, IStorageService storage)
+
+    public ProductService(AppDbContext context, IReadinessService readinessService, IStorageService storage, IEventPublisher eventPublisher, IOptions<KafkaSettings> kafka)
     {
         _context = context;
         _readinessService = readinessService;
         _storage = storage;
+        _eventPublisher = eventPublisher;
+        _kafka = kafka.Value;
     }
 
     public async Task<ProductListResponse> GetAllAsync(
@@ -148,7 +157,7 @@ public class ProductService : IProductService
     {
         var product = await _context.Products
             .Include(p => p.Variants)
-            .Include(p => p.Assets)        // assets only — NOT their status history
+            .Include(p => p.Assets)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             ?? throw new NotFoundException($"Product with id '{id}' not found");
 
@@ -158,7 +167,6 @@ public class ProductService : IProductService
 
         foreach (var asset in product.Assets.Where(a => a.Status == AssetStatus.Uploaded))
         {
-            // add a NEW history row — EF inserts it because it has no key yet
             _context.Set<AssetStatusHistory>().Add(new AssetStatusHistory
             {
                 AssetId = asset.Id,
@@ -174,6 +182,17 @@ public class ProductService : IProductService
 
         product.Status = ProductStatus.InReview;
         product.UpdatedAt = now;
+
+        _eventPublisher.Enqueue(
+            topic: _kafka.ProductEventsTopic,
+            key: product.Id.ToString(),
+            eventType: EventTypes.ProductSubmittedForReview,
+            payload: new ProductSubmittedForReviewPayload(
+                ProductId: product.Id,
+                ProductCode: product.ProductCode,
+                Name: product.Name,
+                AssetCount: product.Assets.Count,
+                SubmittedAt: now));
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -203,6 +222,16 @@ public class ProductService : IProductService
 
         product.Status = ProductStatus.Published;
         product.UpdatedAt = DateTimeOffset.UtcNow;
+
+        _eventPublisher.Enqueue(
+            topic: _kafka.ProductEventsTopic,
+            key: product.Id.ToString(),
+            eventType: EventTypes.ProductPublished,
+            payload: new ProductPublishedPayload(
+                ProductId: product.Id,
+                ProductCode: product.ProductCode,
+                Name: product.Name,
+                PublishedAt: product.UpdatedAt));
 
         await _context.SaveChangesAsync(cancellationToken);
 

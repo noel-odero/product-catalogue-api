@@ -34,3 +34,10 @@ public enum VariantStatus
     Active,
     Archived
 }
+
+public enum OutboxStatus
+{
+    Pending,
+    Published,
+    Failed,
+}
